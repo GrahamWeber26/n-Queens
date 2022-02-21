@@ -1,0 +1,68 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname nqueens_noaccumulator) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+; nqueens without accumulator
+; CS 208 Program Design
+; Dr. Derrick Tate
+; Graham Weber and Jonathan Bergen
+; December 6, 2021
+
+(require 2htdp/abstraction)
+(require htdp/show-queen)
+
+; lst is a list
+; list-of Items -> Item
+; returns the last item in a list
+(define (last lst)
+  (first (reverse lst)))
+
+; Recursive Version
+; n is a number
+; Number -> [list-of posns] OR #false
+(define (nqueens n)
+  (local (; Number -> [list-of Posn]
+          ; finds a fit for n queens on an n by n board or returns false
+          ; accumulator loq is a list of posns
+          (define (nqueens-local n0 x y loq)   ; To show queens, replace "
+             (cond
+               [(= y n0) loq]  ; if y equals the last row, every row has a queen and the solution has been found
+               [(and (= x n0) (= y 0)) #false]  ; if first queen is past end of the board, all spots have been tried and there is no solution
+               [else
+                (cond
+                  [(>= x n0) (nqueens-local n0 (+ 1 (posn-x (last loq))) (- y 1) (remove (last loq) loq))] ; if the last col in the row has been tried, remove the last queen and move the queen in the prev row right 1
+                  [(threatened? x y loq) (nqueens-local n0 (+ x 1) y loq)]          ; if this spot is threatened, move the queen right 1 and try again
+                  [else (nqueens-local n0 0 (+ y 1) (place-queen x y loq))])])))  ; if this spot is not threatened, place the queen and move onto the next row
+    (nqueens-local n 0 0 '())))
+
+; place-queen
+; x, y are numbers; loq is a [list-of posns]
+; Numbers, [list-of posns] -> [list-of posns]
+; appends a new posn with x and y to list of queens
+(define (place-queen x y loq)
+  (append loq (list (make-posn x y))))
+
+; threatened?
+; x, y are numbers; loq is a [list-of posns]
+; Numbers, [list-of posns] -> boolean
+; checks if the current position is threatened by any queen in loq
+(define (threatened? x y loq)
+  (cond
+    [(empty? loq) #false]
+    [(or
+      (= x (posn-x (first loq)))
+      (= y (posn-y (first loq)))
+      (= (abs (- x (posn-x (first loq)))) (abs  (- y (posn-y (first loq)))))
+      (threatened? x y (rest loq))) #true]
+    [else #false]))
+
+; showqueens
+; loq is a list-of Booleans
+; list-of Booleans -> image
+; converts output into list suitable for show-queen
+(define (showQueens n loq)
+  (show-queen (for/list ([j (in-range n)])
+    (for/list ([i (in-range n)])
+      (if (member (make-posn i j) loq) #t #f)))))
+
+(nqueens 15)
+; NOTE: To show queens, replace "loq" with "(showQueens n0 loq)" on line 25
